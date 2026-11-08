@@ -16,7 +16,7 @@ Realtime Filament notifications over [Centrifugo](https://centrifugal.dev) webso
 
 - injects a Laravel Echo stand-in into the panel for logged-in users — Filament's database and broadcast notifications arrive over the websocket, no Pusher protocol, no npm build;
 - connects as the **panel's auth guard** (an `admin` panel connects as the admin, even with a `web` user logged in on the same browser);
-- turns database-notification polling off.
+- turns database-notification polling off, and refreshes the bell live for every stored Filament notification — `sendToDatabase()` works with or without `isEventDispatched: true`.
 
 ## Compatibility
 
@@ -76,12 +76,12 @@ Broadcast::channel(
 );
 ```
 
-Send notifications with the event dispatched so the bell refreshes live:
+Send notifications as usual — the bell refreshes live:
 
 ```php
 Notification::make()
     ->title('Export finished')
-    ->sendToDatabase($admin, isEventDispatched: true);
+    ->sendToDatabase($admin);
 
 // or a toast pushed straight to the open panel
 Notification::make()->title('Saved')->broadcast($admin);
