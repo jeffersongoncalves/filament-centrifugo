@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
+use Filament\Notifications\DatabaseNotification;
+use Filament\Notifications\Events\DatabaseNotificationsSent;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Event;
 use JeffersonGoncalves\Filament\Centrifugo\Tests\Fixtures\TestUser;
 
 it('injects the Echo stand-in for a logged-in user, on the panel guard', function (): void {
@@ -26,6 +31,25 @@ it('lets the panel guard request a connection token', function (): void {
         ->postJson('/broadcasting/centrifugo-token?guard=admin')
         ->assertOk()
         ->assertJsonStructure(['token']);
+});
+
+it('refreshes the bell for every stored Filament notification, flag or not', function (): void {
+    Event::fake([DatabaseNotificationsSent::class]);
+    $user = (new TestUser)->forceFill(['id' => 1]);
+
+    event(new NotificationSent($user, new DatabaseNotification(['format' => 'filament']), 'database'));
+
+    Event::assertDispatched(DatabaseNotificationsSent::class, 1);
+});
+
+it('leaves other channels and non-Filament notifications alone', function (): void {
+    Event::fake([DatabaseNotificationsSent::class]);
+    $user = (new TestUser)->forceFill(['id' => 1]);
+
+    event(new NotificationSent($user, new DatabaseNotification([]), 'mail'));
+    event(new NotificationSent($user, new class extends Notification {}, 'database'));
+
+    Event::assertNotDispatched(DatabaseNotificationsSent::class);
 });
 
 it('turns database-notification polling off', function (): void {
